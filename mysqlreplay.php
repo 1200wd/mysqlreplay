@@ -63,6 +63,7 @@ class Mysqlreplay {
 
 	public function start($file, Mysqladapter $adapter)
 	{
+		set_time_limit(0);
 		gc_enable();
 
 		$this->adapter = $adapter;
@@ -99,7 +100,14 @@ class Mysqlreplay {
 				continue;
 			}
 
-			$this->execute($info);
+			try
+			{
+				$this->execute($info);
+			}
+			catch (Exception $e)
+			{
+				//$this->status_update("\nError: " . $e->getMessage() . "\n");
+			}
 		}
 	}
 
@@ -189,10 +197,11 @@ class Mysqlpdo implements Mysqladapter {
 
 	public function connect($user, $pass, $server)
 	{
-		$pdo = new PDO('mysql:host=' . $server, $user, $pass);
+		$pdo = new PDO('mysql:host=' . $server, $user, $pass, array(PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION));
+		$pdo->setAttribute(PDO::MYSQL_ATTR_USE_BUFFERED_QUERY, false);
+
 		$this->handle = $pdo;
 		return $pdo;
-
 	}
 
 	public function init_db($db)
@@ -205,8 +214,11 @@ class Mysqlpdo implements Mysqladapter {
 	{
 		$statement = $this->handle->prepare($query);
 		$statement->execute();
-		$a = $statement->fetchAll();
-		$a = null;
+		$i = 0;
+		while ($statement->fetch())
+		{
+			// wait
+		}
 	}
 
 	public function quit()
