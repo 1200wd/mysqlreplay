@@ -18,6 +18,7 @@ function main()
 
 	$adapter = new Mysqlpdo();
 	$replay = new Mysqlreplay($user, $pass, $server);
+	$replay->set_status_update(function($message) { echo $message; });
 	$replay->start($file, $adapter);
 }
 
@@ -37,11 +38,27 @@ class Mysqlreplay {
 
 	private $adapter = null;
 
+	private $status_update_func = null;
+
 	public function __construct($user, $pass, $server = '127.0.0.1')
 	{
 		$this->user = $user;
 		$this->pass = $pass;
 		$this->server = $server;
+	}
+
+	public function set_status_update($func)
+	{
+		$this->status_update_func = $func;
+	}
+
+	private function status_update($message)
+	{
+		if ( ! is_callable($this->status_update_func))
+			return;
+
+		$func = $this->status_update_func;
+		$func($message);
 	}
 
 	public function start($file, Mysqladapter $adapter)
@@ -116,17 +133,21 @@ class Mysqlreplay {
 		switch ($info['command'])
 		{
 		case 'Quit':
+			$this->status_update('x');
 			$conn->quit();
 			$this->connections[$info['connection']] = null;
 			gc_collect_cycles();
 			break;
 		case 'Query':
+			$this->status_update('q');
 			$conn->query($info['query']);
 			break;
 		case 'Init DB':
+			$this->status_update('i');
 			$conn->init_db($info['query']);
 			break;
 		case 'Connect':
+			$this->status_update('c');
 			// nothing, get_connection() already connects
 			break;
 		}
@@ -181,7 +202,8 @@ class Mysqlpdo implements Mysqladapter {
 	{
 		$statement = $this->handle->prepare($query);
 		$statement->execute();
-		$statement->fetchAll();
+		$a = $statement->fetchAll();
+		$a = null;
 	}
 
 	public function quit()
