@@ -94,7 +94,10 @@ class Mysqlreplay {
 			$info = $this->parse_line($line);
 
 			if ( ! $info)
+			{
+				$this->status_update('E');
 				continue;
+			}
 
 			$this->execute($info);
 		}
