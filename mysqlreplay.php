@@ -51,6 +51,9 @@ class Mysqlreplay {
 		$this->adapter = $adapter;
 		$this->file_handle = fopen($file, 'r');
 
+		if ($this->file_handle === false)
+			throw new Exception('Unable to open file ' . $file);
+
 		// skip until we get to some data
 		while ( ! feof($this->file_handle))
 		{
